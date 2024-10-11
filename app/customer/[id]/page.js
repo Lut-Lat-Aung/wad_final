@@ -1,14 +1,10 @@
-// app/customer/[id]/page.js
 "use client";
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 
-export default function EditCustomer() {
-  const { register, handleSubmit, reset } = useForm();
+export default function CustomerDetails() {
   const [customer, setCustomer] = useState(null);
-  const router = useRouter();
   const { id } = useParams();
 
   useEffect(() => {
@@ -18,37 +14,43 @@ export default function EditCustomer() {
         const res = await fetch(`/api/customer/${id}`);
         const data = await res.json();
         setCustomer(data);
-        reset(data); // Pre-fill the form with customer data
       }
       fetchCustomer();
     }
-  }, [id, reset]);
-
-  const onSubmit = async (data) => {
-    await fetch(`/api/customer/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    router.push('/customer');  // Redirect to customer list page
-  };
+  }, [id]);
 
   if (!customer) return <div>Loading...</div>;
 
   return (
-    <div>
-      <h1>Edit Customer</h1>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <input {...register('name', { required: true })} placeholder="Name" />
-        <input {...register('dateOfBirth', { required: true })} type="date" placeholder="Date of Birth" />
-        <input {...register('memberNumber', { required: true })} type="number" placeholder="Member Number" />
-        <input {...register('interests', { required: true })} placeholder="Interests" />
-        <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          Update Customer
-        </button>
-      </form>
+    <div className="container">
+      <h1>Customer Details</h1>
+
+      <div className="detail-group">
+        <h2>Name:</h2>
+        <p>{customer.name}</p>
+      </div>
+
+      <div className="detail-group">
+        <h2>Date of Birth:</h2>
+        <p>{new Date(customer.dateOfBirth).toLocaleDateString()}</p>
+      </div>
+
+      <div className="detail-group">
+        <h2>Member Number:</h2>
+        <p>{customer.memberNumber}</p>
+      </div>
+
+      <div className="detail-group">
+        <h2>Interests:</h2>
+        <p>{customer.interests}</p>
+      </div>
+
+      <Link href={`/customer/${customer._id}/edit`}>
+        <button className="button button-primary">Edit Customer</button>
+      </Link>
+      <Link href={`/customer/`}>
+        <button className="button button-primary">Back to Customer List</button>
+      </Link>
     </div>
   );
 }

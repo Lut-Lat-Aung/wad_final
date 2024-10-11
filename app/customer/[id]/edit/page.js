@@ -1,25 +1,44 @@
 "use client";
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 
-export default function AddCustomer() {
-  const { register, handleSubmit } = useForm();
+export default function EditCustomer() {
+  const { register, handleSubmit, reset } = useForm();
+  const [customer, setCustomer] = useState(null);
   const router = useRouter();
+  const { id } = useParams();
+
+  useEffect(() => {
+    if (id) {
+      // Fetch customer by ID
+      async function fetchCustomer() {
+        const res = await fetch(`/api/customer/${id}`);
+        const data = await res.json();
+        setCustomer(data);
+        reset(data); // Pre-fill the form with customer data
+      }
+      fetchCustomer();
+    }
+  }, [id, reset]);
 
   const onSubmit = async (data) => {
-    await fetch('/api/customer', {
-      method: 'POST',
+    await fetch(`/api/customer/${id}`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
     });
-    router.push('/customer');  // Redirect to customer list page
+    router.push(`/customer/${id}`);  // Redirect to customer details page after update
   };
+
+  if (!customer) return <div>Loading...</div>;
 
   return (
     <div className="container">
-      <h1 className="title">Add New Customer</h1>
+      <h1>Edit Customer</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="form">
         <div className="form-group">
           <label htmlFor="name">Name:</label>
@@ -58,12 +77,12 @@ export default function AddCustomer() {
             {...register('interests', { required: true })}
             id="interests"
             className="input"
-            placeholder="Interests (e.g., football, movies)"
+            placeholder="Interests"
           />
         </div>
 
         <button type="submit" className="button button-primary">
-          Add Customer
+          Update Customer
         </button>
       </form>
     </div>

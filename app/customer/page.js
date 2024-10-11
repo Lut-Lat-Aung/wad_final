@@ -1,4 +1,3 @@
-// app/customer/page.js
 "use client";
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -24,28 +23,31 @@ export default function CustomerList() {
   };
 
   return (
-    <div>
+    <div className="container">
       <h1>Customer List</h1>
-      <Link href="/customer/new">
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          Add New Customer
-        </button>
-      </Link>
+      <div className="flex justify-center mb-6">
+        <Link href="/customer/new">
+          <button className="button button-primary">Add New Customer</button>
+        </Link>
+      </div>
       <ul>
         {customers.map(customer => (
           <li key={customer._id}>
-            <span>{customer.name}</span>
             <Link href={`/customer/${customer._id}`}>
-              <button className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded ml-4">
-                Edit
+                
+                <span>{customer.name}</span>
+              </Link>
+            <div>
+              <Link href={`/customer/${customer._id}/edit`}>
+                <button className="button button-edit ml-4">Edit</button>
+              </Link>
+              <button
+                onClick={() => deleteCustomer(customer._id)}
+                className="button button-danger ml-4"
+              >
+                Delete
               </button>
-            </Link>
-            <button
-              onClick={() => deleteCustomer(customer._id)}
-              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded ml-4"
-            >
-              Delete
-            </button>
+            </div>
           </li>
         ))}
       </ul>
