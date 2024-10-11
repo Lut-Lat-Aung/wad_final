@@ -1,33 +1,59 @@
 import Product from "@/models/Product";
+import { NextResponse } from "next/server";  // Use NextResponse for consistent responses
 
+// GET request to fetch all products
 export async function GET() {
-  return Response.json(await Product.find());
+  try {
+    const products = await Product.find();
+    return NextResponse.json(products, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
+  }
 }
 
+// POST request to add a new product
 export async function POST(request) {
-  const body = await request.json();
-  console.log(body)
-  const product = new Product(body);
-  await product.save();
-  return Response.json(product);
+  try {
+    const body = await request.json();
+    console.log(body);  // Log the request body for debugging
+    const product = new Product(body);
+    await product.save();
+    return NextResponse.json(product, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+  }
 }
 
+// PUT request to update an existing product
 export async function PUT(request) {
-  const body = await request.json();
-  const { _id, ...updateData } = body;
-  const product = await Product.findByIdAndUpdate(_id, updateData, { new: true });
-  if (!product) {
-    return new Response("Product not found", { status: 404 });
+  try {
+    const body = await request.json();
+    const { _id, ...updateData } = body;
+    
+    const product = await Product.findByIdAndUpdate(_id, updateData, { new: true });
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    
+    return NextResponse.json(product, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
   }
-  return Response.json(product);
 }
 
+// PATCH request to partially update a product
 export async function PATCH(request) {
-  const body = await request.json();
-  const { _id, ...updateData } = body;
-  const product = await Product.findByIdAndUpdate(_id, updateData, { new: true });
-  if (!product) {
-    return new Response("Product not found", { status: 404 });
+  try {
+    const body = await request.json();
+    const { _id, ...updateData } = body;
+    
+    const product = await Product.findByIdAndUpdate(_id, updateData, { new: true });
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    
+    return NextResponse.json(product, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to partially update product" }, { status: 500 });
   }
-  return Response.json(product);
 }

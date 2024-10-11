@@ -4,37 +4,63 @@ import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  const APIBASE = process.env.NEXT_PUBLIC_API_URL;
+  const APIBASE = process.env.NEXT_PUBLIC_API_URL; // Ensure API base is correct
   const { register, handleSubmit, reset } = useForm();
   const [products, setProducts] = useState([]);
   const [category, setCategory] = useState([]);
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const startEdit = (product) => async () => {
-    setEditMode(true);
-    reset(product);
+  // Clear form function
+  const clearForm = () => {
+    reset({
+      code: "",
+      name: "",
+      description: "",
+      price: "",
+      category: "",
+    });
+    setEditMode(false);
   };
 
+  // Fetch all products
   async function fetchProducts() {
-    const data = await fetch(`${APIBASE}/product`);
-    const p = await data.json();
-    const p2 = p.map((product) => {
-      product.id = product._id;
-      return product;
-    });
-    setProducts(p2);
+    try {
+      const response = await fetch(`${APIBASE}/product`);
+      if (!response.ok) throw new Error("Failed to fetch products");
+      const productsData = await response.json();
+      const formattedProducts = productsData.map((product) => {
+        product.id = product._id;
+        return product;
+      });
+      setProducts(formattedProducts);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
   }
 
+  // Fetch all categories
   async function fetchCategory() {
-    const data = await fetch(`${APIBASE}/category`);
-    const c = await data.json();
-    setCategory(c);
+    try {
+      console.log("APIBASE:", APIBASE);  // Check API base
+      const response = await fetch(`${APIBASE}/category`);
+      if (!response.ok) throw new Error("Failed to fetch categories");
+
+      const categories = await response.json();
+      console.log("Fetched categories:", categories);  // Log fetched categories
+      setCategory(categories);  // Update state with fetched categories
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
   }
 
+  // Handle creating or updating a product
   const createProductOrUpdate = async (data) => {
-    if (editMode) {
+    setLoading(true);
+    try {
+      const method = editMode ? "PUT" : "POST";
       const response = await fetch(`${APIBASE}/product`, {
-        method: "PUT",
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -42,74 +68,63 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        alert(`Failed to update product: ${response.status}`);
-      }
-      alert("Product updated successfully");
-      reset({
-        code: "",
-        name: "",
-        description: "",
-        price: "",
-        category: "",
-      });
-      setEditMode(false);
-      fetchProducts();
-      return;
-    }
-
-    const response = await fetch(`${APIBASE}/product`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    try {
-      if (!response.ok) {
-        throw new Error(`Response status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to ${editMode ? "update" : "add"} product`);
       }
 
-      // const json = await response.json();
-      alert("Product added successfully");
-
-      reset({
-        code: "",
-        name: "",
-        description: "",
-        price: "",
-        category: "",
-      });
+      alert(`Product ${editMode ? "updated" : "added"} successfully`);
+      clearForm();
       fetchProducts();
     } catch (error) {
-      alert(`Failed to add product: ${error.message}`);
-      console.error(error);
+      alert(`Failed to ${editMode ? "update" : "add"} product: ${error.message}`);
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Start edit mode for a product
+  const startEdit = (product) => () => {
+    setEditMode(true);
+    reset(product);
+  };
+
+  // Delete product by ID
   const deleteById = (id) => async () => {
     if (!confirm("Are you sure?")) return;
 
-    const response = await fetch(`${APIBASE}/product/${id}`, {
-      method: "DELETE",
-    });
+    try {
+      const response = await fetch(`${APIBASE}/product/${id}`, {
+        method: "DELETE",
+      });
 
-    if (!response.ok) {
-      alert(`Failed to delete product: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`Failed to delete product: ${response.status}`);
+      }
+
+      alert("Product deleted successfully");
+      fetchProducts();
+    } catch (error) {
+      alert(`Failed to delete product: ${error.message}`);
+      console.error("Error deleting product:", error);
     }
-    alert("Product deleted successfully");
-    fetchProducts();
   };
 
+  // Fetch categories and products on component mount
   useEffect(() => {
     fetchCategory();
     fetchProducts();
   }, []);
 
+  // Log the updated category state to ensure it is set correctly
+  useEffect(() => {
+    console.log("Category state updated:", category);
+  }, [category]);
+
   return (
     <>
       <div className="flex flex-row gap-4">
-        <div className="flex-1 w-64 ">
+        <div className="flex-1 w-64">
           <form onSubmit={handleSubmit(createProductOrUpdate)}>
             <div className="grid grid-cols-2 gap-4 m-4 w-1/2">
               <div>Code:</div>
@@ -141,7 +156,7 @@ export default function Home() {
               <div>Price:</div>
               <div>
                 <input
-                  name="name"
+                  name="price"
                   type="number"
                   {...register("price", { required: true })}
                   className="border border-black w-full"
@@ -154,11 +169,15 @@ export default function Home() {
                   {...register("category", { required: true })}
                   className="border border-black w-full"
                 >
-                  {category.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))}
+                  {category && category.length > 0 ? (
+                    category.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No categories available</option>
+                  )}
                 </select>
               </div>
               <div className="col-span-2">
@@ -177,10 +196,8 @@ export default function Home() {
                 )}
                 {editMode && (
                   <button
-                    onClick={() => {
-                      reset({ code: "", name: "", description: "", price: "", category: "" });
-                      setEditMode(false);
-                    }}
+                    type="button"
+                    onClick={clearForm}
                     className="ml-2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full"
                   >
                     Cancel
@@ -191,23 +208,29 @@ export default function Home() {
           </form>
         </div>
         <div className="border m-4 bg-slate-300 flex-1 w-64">
-          <h1 className="text-2xl">Products ({products.length})</h1>
-          <ul className="list-disc ml-8">
-            {products.map((p) => (
-              <li key={p._id}>
-                <button className="border border-black p-1/2" onClick={startEdit(p)}>
-                  📝
-                </button>{" "}
-                <button className="border border-black p-1/2" onClick={deleteById(p._id)}>
-                  ❌
-                </button>{" "}
-                <Link href={`/product/${p._id}`} className="font-bold">
-                  {p.name}
-                </Link>{" "}
-                - {p.description}
-              </li>
-            ))}
-          </ul>
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
+            <>
+              <h1 className="text-2xl">Products ({products.length})</h1>
+              <ul className="list-disc ml-8">
+                {products.map((p) => (
+                  <li key={p._id}>
+                    <button className="border border-black p-1/2" onClick={startEdit(p)}>
+                      📝
+                    </button>{" "}
+                    <button className="border border-black p-1/2" onClick={deleteById(p._id)}>
+                      ❌
+                    </button>{" "}
+                    <Link href={`/product/${p._id}`} className="font-bold">
+                      {p.name}
+                    </Link>{" "}
+                    - {p.description}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       </div>
     </>

@@ -4,21 +4,39 @@ import { useForm } from "react-hook-form";
 import Link from "next/link";
 
 export default function Home() {
-  const APIBASE = process.env.NEXT_PUBLIC_API_URL;
+  const APIBASE = process.env.NEXT_PUBLIC_API_BASE;  
   const [categoryList, setCategoryList] = useState([]);
   const [editMode, setEditMode] = useState(false);
 
   const { register, handleSubmit, reset } = useForm();
 
   async function fetchCategory() {
-    const data = await fetch(`${APIBASE}/category`);
-    const c = await data.json();
-    const c2 = c.map((category) => {
-      category.id = category._id;
-      return category;
-    });
-    setCategoryList(c2);
+    try {
+      const response = await fetch(`${APIBASE}/category`);
+      const contentType = response.headers.get("content-type");
+  
+      // Log the content type and response text for debugging
+      console.log("Response Content-Type:", contentType);
+  
+      const responseText = await response.text(); // Read the raw response text
+      console.log("Response Text:", responseText);
+  
+      // If the response is JSON, parse it
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const jsonData = JSON.parse(responseText);
+        const formattedCategories = jsonData.map((category) => ({
+          ...category,
+          id: category._id,
+        }));
+        setCategoryList(formattedCategories);
+      } else {
+        throw new Error("Response is not JSON. Something went wrong.");
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
   }
+  
 
   const startEdit = (category) => async () => {
     setEditMode(true);
