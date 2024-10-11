@@ -1,2 +1,2 @@
-# wad_final
-repo for final exam
+# Stock App
+Define variables in `.env`, see `env-example`
